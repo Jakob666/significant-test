@@ -13,6 +13,9 @@ Description:
 ==========================
 @update: 纠正了其中一处语法错误
 @version: 1.2
+==========================
+@update: 加了更详尽的注释，因为实际项目中出现易混淆点
+@version: 1.3
 '''
 import numpy as np
 # from matplotlib import pyplot as plt
@@ -41,17 +44,22 @@ class Boostrap_test:
         '''
         conbimed = x_data + y_data
         z = np.mean(conbimed)
+        #未经处理的x样本组数据均值
         x_mean = np.mean(x_data)
         x_std = np.std(x_data)
+        #未经处理的y样本组数据均值
         y_mean = np.mean(y_data)
         y_std = np.std(y_data)
         #计算 observed数据的t值
         t_obs = Boostrap_test.calc_t_val(x_mean, y_mean, len(x_data), len(y_data), x_std, y_std)
-
+        #x样本组数据预处理
         x_data = list(map(lambda i: i - x_mean + z, x_data))
-        y_data = list(map(lambda i: i - y_mean + z, y_data))
-
-        return x_data, y_data, t_obs, x_mean, y_mean
+        # x_mean = np.mean(x_data)                                          ##################################
+        #y样本组数据预处理                                                     # 在这两处求取处理后x、y样本组        #
+        y_data = list(map(lambda i: i - y_mean + z, y_data))                # 的均值是无用的，因为均值都是        #
+        # y_mean = np.mean(y_data)                                          # z。之前的处理是将x、y融为一组       #
+                                                                            # ，z是两组样本共同的均值            #
+        return x_data, y_data, t_obs, x_mean, y_mean                        ##################################
 
     def boostrap(self, x_data, y_data, t_obs):
         '''
