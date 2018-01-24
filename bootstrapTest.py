@@ -19,6 +19,15 @@ Description:
 ==========================
 @update: 对bootstrap的均值、方差的计算做了较大程度上的变化
 @version: 2.0
+==========================
+@update: 纠正一处关键的拼写错误
+@version: 2.1.1
+==========================
+@update: 使用矢量计算代替了之前的一处线性计算，提高效率
+@version: 2.1.2
+==========================
+@update: 增加了对初始输入值的判断，传入空值的情况直接报错并退出。
+@version: 2.1.3
 '''
 import numpy as np
 # from matplotlib import pyplot as plt
@@ -27,7 +36,7 @@ import warnings
 # from t_test import T_test
 
 
-class Boostrap_test:
+class Bootstrap_test:
 
     def __init__(self, Confidence=0.95, time=1000, side="two-side"):
         '''
@@ -49,6 +58,9 @@ class Boostrap_test:
         :param x_data: 参数类型是列表，由样本组一的样本值组成
         :param y_data: 参数类型是列表，由样本组二的样本值组成
         '''
+        if len(x_data) == 0 | len(y_data) == 0:
+            print("invalid input, at least one empty set in two datasets.")
+            exit()
         #未经处理的x样本组数据均值
         x_mean = np.mean(x_data)
         x_std = np.std(x_data)
@@ -56,11 +68,11 @@ class Boostrap_test:
         y_mean = np.mean(y_data)
         y_std = np.std(y_data)
         #计算 observed数据的t值
-        t_obs = Boostrap_test.calc_t_val(x_mean, y_mean, len(x_data), len(y_data), x_std, y_std, self.side)
+        t_obs = Bootstrap_test.calc_t_val(x_mean, y_mean, len(x_data), len(y_data), x_std, y_std, self.side)
         print(t_obs)
         return t_obs
 
-    def boostrap(self, x_data, y_data, t_obs):
+    def bootstrap(self, x_data, y_data, t_obs):
         '''
         模拟boostrap抽样，每次抽样 size个样本（有放回抽样）
         求出x、y样本抽样后形成的新的样本的合并均值z，将x、y新样本的值进行相应的替换：
@@ -80,16 +92,18 @@ class Boostrap_test:
         x_size = len(x_data)
         y_size = len(y_data)
         for t in range(self.times):
-            x_samples = np.random.choice(x_data, x_size)  #choice方法可以模拟又放回的抽取，size的值可以大于len(data)
+            x_samples = np.random.choice(x_data, x_size)  #choice方法可以模拟有放回的抽取，size的值等于len(data)
             y_samples = np.random.choice(y_data, y_size)
 
             self.x_total_samples = np.append(self.x_total_samples, x_samples)
             self.y_total_samples = np.append(self.y_total_samples, y_samples)
-            # x样本组抽取的样本数据预处理
-            x_samples = list(map(lambda i: i - x_mean + z, x_samples))
+            # x样本组抽取的样本数据预处理,下面两行语句中，后者比前者高效是矢量计算
+            # x_samples = list(map(lambda i: i - x_mean + z, x_samples))
+            x_samples = x_samples - x_mean + z
             x_samples_mean = np.mean(x_samples)
-            # y样本组抽取的样本数据预处理
-            y_samples  = list(map(lambda i: i - y_mean + z, y_samples))
+            # y样本组抽取的样本数据预处理，下面两行语句中，后者比前者高效是矢量计算
+            # y_samples  = list(map(lambda i: i - y_mean + z, y_samples))
+            y_samples = y_samples - y_mean + z
             y_samples_mean = np.mean(y_samples)
             x_samples_std = np.std(x_samples)
             y_samples_std = np.std(y_samples)
@@ -159,7 +173,7 @@ class Boostrap_test:
                 x_std是样本组x的标准差；y_std是样本组y的标准差。
         '''
         t_obs = self.preprocess(x_data, y_data)
-        res, p_val, p_ref, x_mean, y_mean, x_std, y_std = self.boostrap(x_data, y_data, t_obs)
+        res, p_val, p_ref, x_mean, y_mean, x_std, y_std = self.bootstrap(x_data, y_data, t_obs)
         return res, p_val, p_ref, x_mean, y_mean, x_std, y_std
 
 
