@@ -14,7 +14,7 @@ Description:
 @version: 1.0
 '''
 import numpy as np
-from bootstrapTest import Boostrap_test
+from bootstrapTest import Bootstrap_test
 
 
 class Normal_test:
@@ -60,11 +60,13 @@ class Normal_test:
         return norm1, norm2
 
     def test_bootstrap(self):
-        b = Boostrap_test(time=1000,side="one-side")
+        b = Bootstrap_test(time=1000,side="one-side")
         # 相同分布的两个总体进行检验
-        norm1, norm2 = Normal_test.totally_different_normal_distribution(9.5, 10, 3, 1)
-        x_data = list(norm1)
-        y_data = list(norm2)
+        # norm1, norm2 = Normal_test.totally_different_normal_distribution(1,10,0.5,2)
+        # norm1, norm2 = Normal_test.totally_different_normal_distribution(10, 1, 2, 0.5)
+        norm1, norm2 = Normal_test.form_same_normal_distribution(10, 1)
+        x_data = norm1
+        y_data = norm2
         res, p_val, p_ref, x_mean, y_mean, x_std, y_std = b.main(x_data, y_data)
         print(res, p_val, p_ref, x_mean, y_mean, x_std, y_std)
 

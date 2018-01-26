@@ -28,12 +28,13 @@ Description:
 ==========================
 @update: 增加了对初始输入值的判断，传入空值的情况直接报错并退出。
 @version: 2.1.3
+==========================
+@update:修补之前的漏洞，附加更为详尽的注释在 calc_p_val方法上
+@version:2.2.1
 '''
 import numpy as np
-# from matplotlib import pyplot as plt
 import os
 import warnings
-# from t_test import T_test
 
 
 class Bootstrap_test:
@@ -68,8 +69,11 @@ class Bootstrap_test:
         y_mean = np.mean(y_data)
         y_std = np.std(y_data)
         #计算 observed数据的t值
-        t_obs = Bootstrap_test.calc_t_val(x_mean, y_mean, len(x_data), len(y_data), x_std, y_std, self.side)
-        print(t_obs)
+        if x_mean < y_mean:
+            t_obs = Bootstrap_test.calc_t_val(x_mean, y_mean, len(x_data), len(y_data), x_std, y_std, self.side)
+        elif x_mean >= y_mean:
+            t_obs = Bootstrap_test.calc_t_val(y_mean, x_mean, len(y_data), len(x_data), y_std, x_std, self.side)
+        # print(t_obs)
         return t_obs
 
     def bootstrap(self, x_data, y_data, t_obs):
@@ -84,7 +88,7 @@ class Bootstrap_test:
         :return:
         '''
         # z是两组样本中抽取数据共同的均值
-        conbimed = x_data + y_data
+        conbimed = np.append(x_data, y_data)
         z = np.mean(conbimed)
         x_mean = np.mean(x_data)
         y_mean = np.mean(y_data)
@@ -108,7 +112,7 @@ class Bootstrap_test:
             x_samples_std = np.std(x_samples)
             y_samples_std = np.std(y_samples)
 
-            t_val = Boostrap_test.calc_t_val(x_samples_mean, y_samples_mean, x_size, y_size, x_samples_std, y_samples_std, self.side)
+            t_val = Bootstrap_test.calc_t_val(x_samples_mean, y_samples_mean, x_size, y_size, x_samples_std, y_samples_std, self.side)
             self.t_val_list.append(t_val)
         # print(self.t_val_list)
         p_val = self.calc_p_val(t_obs, self.t_val_list)
@@ -153,14 +157,18 @@ class Bootstrap_test:
 
     def calc_p_val(self, t_obs, t_boot_list):
         '''通过bootstrap抽样所得的数据求得的t值，与observed数据测得的t值比较，求出p值
+            如果置信区间取95%，当H0正确时，拒绝零假设所犯的第一类错误α的值为0.05；
+        当t_boot<t_obs,说明拒绝零假设时犯第一类错误的概率α>0.05，求取抽样的
+        所有次数中犯第一类错误的次数占总次数的比值，求取的实际上就是bootstrap
+        抽样后的α值。
         :param t_obs: 是preprocess方法中计算出来的两个样本组原始值的 t检验值
         :param t_boot_list: 是一个列表，是经过 self.time次抽样后得到的self.time个 t'值组成的列表
         '''
         count = 0.0
         for t in range(self.times):
-            if t_obs > t_boot_list[t]:
+            if t_obs > t_boot_list[t]:  #t_boot<t_obs表示拒绝H0时会犯第一类错误
                 count += 1.0
-        p_val = count/self.times  #self.time次中有 count次拒绝H0后发生第一类错误的概率小于α
+        p_val = count/self.times  #self.time次中有 count次拒绝H0后发生第一类错误的概率
         return p_val
 
     def main(self, x_data, y_data):
@@ -172,6 +180,8 @@ class Bootstrap_test:
                 x_mean是样本组x的均值； y_mean是样本组y的均值；
                 x_std是样本组x的标准差；y_std是样本组y的标准差。
         '''
+        x_data = np.array(x_data)
+        y_data = np.array(y_data)
         t_obs = self.preprocess(x_data, y_data)
         res, p_val, p_ref, x_mean, y_mean, x_std, y_std = self.bootstrap(x_data, y_data, t_obs)
         return res, p_val, p_ref, x_mean, y_mean, x_std, y_std
